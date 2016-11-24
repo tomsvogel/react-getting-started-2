@@ -1,5 +1,9 @@
 import React, {Component} from 'react';
+import { createStore } from 'redux'
+import { Provider } from 'react-redux'
+
 import logo from './logo.svg';
+
 import './App.css';
 import Giphy from './Giphy';
 

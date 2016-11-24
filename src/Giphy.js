@@ -1,38 +1,32 @@
 import React, {Component, PropTypes} from 'react';
 import './App.css';
-import fetch from 'isomorphic-fetch';
+import * as GiphyActions from './action/GiphyActions';
+import {bindActionCreators} from 'redux'
+import {connect} from 'react-redux'
 
+
+const apiKey = 'dc6zaTOxFJmzC';
+const maxResults = 10;
 class Giphy extends Component {
 
     constructor(props) {
         super(props);
-        this.state = {searchString: '', searchResult: []};
+        this.state = {searchString: ''};
     }
 
     _handleInput = (event) => {
         this.setState({searchString: event.target.value});
     };
 
-    _search = () => {
-
-        fetch('http://api.giphy.com/v1/gifs/search?api_key=' + this.props.apiKey +
-            '&q=' + encodeURIComponent(this.state.searchString) + '&limit=' + this.props.maxResults)
-            .then(function(response) {
-                if (response.status >= 400) {
-                    throw new Error("Bad response from server");
-                }
-                return response.json();
-            })
-            .then(function(response) {
-                console.log(response);
-                this.setState({searchResult: response.data});
-            }.bind(this));
-
-    };
-
     _handleEsc = (event) => {
         if (event.keyCode === 27) {
             this.setState({searchResult: []});
+        }
+    };
+
+    _search = () => {
+        if (this.state.searchString !== '') {
+            this.props.actions.search(this.state.searchString, apiKey, maxResults);
         }
     };
 
@@ -44,8 +38,21 @@ class Giphy extends Component {
         document.removeEventListener('keydown', this._handleEsc);
     }
 
-
     render() {
+
+        let {gifs} = this.props.giphy;
+
+        let result = '';
+        if (gifs.length > 0) {
+            result = gifs.map((gif, idx) => {
+                return (
+                    <div key={idx}>
+                        <img src={gif.images.downsized.url} role='presentation'/>
+                    </div>
+                );
+            })
+        }
+
         return (
             <div className='giphy-search'>
                 Giphy searcher
@@ -57,24 +64,26 @@ class Giphy extends Component {
                 <button onClick={this._search}>Search on Giphy</button>
 
                 <div className='giphy-search-result'>
-                    <div>{this.state.searchResult.length} Results found</div>
-
-                    {this.state.searchResult.map((gif, idx) => {
-                        return (
-                            <div key={idx}>
-                                <img src={gif.images.downsized.url} role='presentation'/>
-                            </div>
-                        );
-                    })}
+                    <div>{gifs.length} Results found</div>
+                    {result}
                 </div>
             </div>
         );
     }
 }
 
-Giphy.propTypes = {
-    maxResults: PropTypes.number.isRequired,
-    apiKey: PropTypes.string.isRequired
-}
+Giphy.propTypes = {}
 
-export default Giphy;
+
+const mapStateToProps = (state) => ({
+    giphy: state.giphy
+})
+
+const mapDispatchToProps = (dispatch) => ({
+    actions: bindActionCreators(GiphyActions, dispatch)
+})
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(Giphy)
